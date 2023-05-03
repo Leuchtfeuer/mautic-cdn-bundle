@@ -1,0 +1,136 @@
+<?php
+
+declare(strict_types=1);
+
+namespace MauticPlugin\MauticCdnBundle\EventListener;
+
+use DOMAttr;
+use DOMElement;
+use Mautic\EmailBundle\EmailEvents;
+use Mautic\EmailBundle\Event\EmailEvent;
+use MauticPlugin\MauticCdnBundle\Integration\Config;
+use RuntimeException;
+use Symfony\Component\DomCrawler\AbstractUriElement;
+use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\DomCrawler\Image;
+use Symfony\Component\DomCrawler\Link;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+
+class OnPreSaveSubscriber implements EventSubscriberInterface
+{
+    private Config $config;
+
+    private string $siteUrl;
+
+    public function __construct(Config $config, string $host)
+    {
+        $this->config  = $config;
+        $this->siteUrl = $host;
+    }
+
+    public function onPreSave(EmailEvent $event): void
+    {
+        if (!$this->config->isPublished()) {
+            return;
+        }
+
+        $integrationSettings = $this->config->getIntegrationEntity()->getFeatureSettings();
+        assert(is_array($integrationSettings));
+        if (!isset($integrationSettings['integration'])) {
+            return;
+        }
+        $settings = $integrationSettings['integration'];
+
+        if (!isset($settings['cdn']) || '' === $settings['cdn']) {
+            return;
+        }
+
+        $cdn              = $settings['cdn'];
+        $extensions       = $settings['extensions'];
+        $extensionsQuoted = array_map(static function (string $extension): string {
+            return preg_quote($extension, '/');
+        }, $extensions);
+        $extensionsRegex = '/(?:'.implode('|', $extensionsQuoted).')(?:|\?[\w]*)$/';
+
+        $email = $event->getEmail();
+        $html  = $email->getCustomHtml();
+        assert(is_string($html));
+
+        // no regex for HTML https://stackoverflow.com/a/1732454
+        $crawler = new Crawler(null, null, $this->siteUrl);
+        $crawler->addHtmlContent($html);
+
+        $this->replace($crawler->filter('a')->links(), $extensionsRegex, $cdn);
+        $this->replace($crawler->filter('img')->images(), $extensionsRegex, $cdn);
+        $this->replaceElement($crawler->filter('source'), $extensionsRegex, $cdn, 'src');
+        $html = $crawler->html();
+
+        $email->setCustomHtml($html);
+    }
+
+    /**
+     * @return array<string, array<int, string|int>|string>
+     */
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            EmailEvents::EMAIL_PRE_SAVE => 'onPreSave',
+        ];
+    }
+
+    /**
+     * @param array<int, AbstractUriElement> $elements
+     */
+    private function replace(array $elements, string $extensionsRegex, string $cdn): void
+    {
+        foreach ($elements as $element) {
+            $href = $element->getUri();
+
+            if (null === $href) {
+                continue;
+            }
+
+            if (false === strpos($href, $this->siteUrl)) {
+                continue;
+            }
+
+            if (1 !== preg_match($extensionsRegex, $href)) {
+                continue;
+            }
+
+            if ($element instanceof Link) {
+                $element->getNode()->setAttribute('href', str_replace($this->siteUrl, $cdn, $href));
+            } elseif ($element instanceof Image) {
+                $element->getNode()->setAttribute('src', str_replace($this->siteUrl, $cdn, $href));
+            } else {
+                throw new RuntimeException('The item should be either Link or Image.');
+            }
+        }
+    }
+
+    private function replaceElement(Crawler $elements, string $extensionsRegex, string $cdn, string $attribute): void
+    {
+        $elements->each(function (Crawler $crawler) use ($extensionsRegex, $cdn, $attribute): void {
+            $node = $crawler->getNode(0);
+            if (null === $node || null === $node->attributes || !$node instanceof DOMElement) {
+                return;
+            }
+
+            $hrefAttribute = $node->attributes->getNamedItem($attribute);
+
+            if (!$hrefAttribute instanceof DOMAttr) {
+                return;
+            }
+
+            if (false === strpos($hrefAttribute->value, $this->siteUrl)) {
+                return;
+            }
+
+            if (1 !== preg_match($extensionsRegex, $hrefAttribute->value)) {
+                return;
+            }
+
+            $hrefAttribute->value = str_replace($this->siteUrl, $cdn, $hrefAttribute->value);
+        });
+    }
+}
