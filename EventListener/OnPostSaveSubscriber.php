@@ -64,8 +64,16 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
         $crawler = new Crawler(null, null, $this->siteUrl);
         $crawler->addHtmlContent($html);
 
-        $this->replace($crawler->filter('a')->links(), $extensionsRegex, $cdn);
-        $this->replace($crawler->filter('img')->images(), $extensionsRegex, $cdn);
+        $links = $crawler->filter('a');
+        if ($links->count() > 0) {
+            $this->replace($links->links(), $extensionsRegex, $cdn);
+        }
+
+        $images = $crawler->filter('img');
+        if ($images->count() > 0) {
+            $this->replace($images->images(), $extensionsRegex, $cdn);
+        }
+
         $this->replaceElement($crawler->filter('source'), $extensionsRegex, $cdn, 'src');
         $html = $crawler->html();
 
