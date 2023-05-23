@@ -8,6 +8,7 @@ use DOMAttr;
 use DOMElement;
 use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Event\EmailEvent;
+use Mautic\EmailBundle\Model\EmailModel;
 use MauticPlugin\MauticCdnBundle\Integration\Config;
 use RuntimeException;
 use Symfony\Component\DomCrawler\AbstractUriElement;
@@ -16,19 +17,22 @@ use Symfony\Component\DomCrawler\Image;
 use Symfony\Component\DomCrawler\Link;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-class OnPreSaveSubscriber implements EventSubscriberInterface
+class OnPostSaveSubscriber implements EventSubscriberInterface
 {
     private Config $config;
 
+    private EmailModel $emailModel;
+
     private string $siteUrl;
 
-    public function __construct(Config $config, string $host)
+    public function __construct(Config $config, EmailModel $emailModel, string $host)
     {
-        $this->config  = $config;
-        $this->siteUrl = $host;
+        $this->config     = $config;
+        $this->emailModel = $emailModel;
+        $this->siteUrl    = $host;
     }
 
-    public function onPreSave(EmailEvent $event): void
+    public function onPostSave(EmailEvent $event): void
     {
         if (!$this->config->isPublished()) {
             return;
@@ -60,12 +64,21 @@ class OnPreSaveSubscriber implements EventSubscriberInterface
         $crawler = new Crawler(null, null, $this->siteUrl);
         $crawler->addHtmlContent($html);
 
-        $this->replace($crawler->filter('a')->links(), $extensionsRegex, $cdn);
-        $this->replace($crawler->filter('img')->images(), $extensionsRegex, $cdn);
+        $links = $crawler->filter('a');
+        if ($links->count() > 0) {
+            $this->replace($links->links(), $extensionsRegex, $cdn);
+        }
+
+        $images = $crawler->filter('img');
+        if ($images->count() > 0) {
+            $this->replace($images->images(), $extensionsRegex, $cdn);
+        }
+
         $this->replaceElement($crawler->filter('source'), $extensionsRegex, $cdn, 'src');
         $html = $crawler->html();
 
         $email->setCustomHtml($html);
+        $this->emailModel->getRepository()->saveEntity($email);
     }
 
     /**
@@ -74,7 +87,7 @@ class OnPreSaveSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            EmailEvents::EMAIL_PRE_SAVE => 'onPreSave',
+            EmailEvents::EMAIL_POST_SAVE => ['onPostSave', -255],
         ];
     }
 

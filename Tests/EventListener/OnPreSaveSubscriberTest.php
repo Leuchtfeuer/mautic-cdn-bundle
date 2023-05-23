@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace MauticPlugin\MauticCdnBundle\Tests\EventListener;
 
 use Mautic\EmailBundle\Entity\Email;
+use Mautic\EmailBundle\Entity\EmailRepository;
 use Mautic\EmailBundle\Event\EmailEvent;
+use Mautic\EmailBundle\Model\EmailModel;
 use Mautic\PluginBundle\Entity\Integration;
-use MauticPlugin\MauticCdnBundle\EventListener\OnPreSaveSubscriber;
+use MauticPlugin\MauticCdnBundle\EventListener\OnPostSaveSubscriber;
 use MauticPlugin\MauticCdnBundle\Integration\Config;
 use PHPUnit\Framework\TestCase;
 
@@ -25,8 +27,12 @@ class OnPreSaveSubscriberTest extends TestCase
         $config->method('isPublished')
             ->willReturn(false);
 
-        $subscriber = new OnPreSaveSubscriber($config, $host);
-        $subscriber->onPreSave($event);
+        $emailModel = $this->createMock(EmailModel::class);
+        $emailModel->expects(self::never())
+            ->method('getRepository');
+
+        $subscriber = new OnPostSaveSubscriber($config, $emailModel, $host);
+        $subscriber->onPostSave($event);
     }
 
     public function testNoIntegrationSettings(): void
@@ -47,8 +53,12 @@ class OnPreSaveSubscriberTest extends TestCase
         $config->method('getIntegrationEntity')
             ->willReturn($integration);
 
-        $subscriber = new OnPreSaveSubscriber($config, $host);
-        $subscriber->onPreSave($event);
+        $emailModel = $this->createMock(EmailModel::class);
+        $emailModel->expects(self::never())
+            ->method('getRepository');
+
+        $subscriber = new OnPostSaveSubscriber($config, $emailModel, $host);
+        $subscriber->onPostSave($event);
     }
 
     /**
@@ -73,8 +83,12 @@ class OnPreSaveSubscriberTest extends TestCase
         $config->method('getIntegrationEntity')
             ->willReturn($integration);
 
-        $subscriber = new OnPreSaveSubscriber($config, $host);
-        $subscriber->onPreSave($event);
+        $emailModel = $this->createMock(EmailModel::class);
+        $emailModel->expects(self::never())
+            ->method('getRepository');
+
+        $subscriber = new OnPostSaveSubscriber($config, $emailModel, $host);
+        $subscriber->onPostSave($event);
     }
 
     public static function emptyCdnProvider(): \Generator
@@ -122,7 +136,17 @@ class OnPreSaveSubscriberTest extends TestCase
         $config->method('getIntegrationEntity')
             ->willReturn($integration);
 
-        $subscriber = new OnPreSaveSubscriber($config, $host);
-        $subscriber->onPreSave($event);
+        $emailRepository = $this->createMock(EmailRepository::class);
+        $emailRepository->expects(self::once())
+            ->method('saveEntity')
+            ->with($email);
+
+        $emailModel = $this->createMock(EmailModel::class);
+        $emailModel->expects(self::once())
+            ->method('getRepository')
+            ->willReturn($emailRepository);
+
+        $subscriber = new OnPostSaveSubscriber($config, $emailModel, $host);
+        $subscriber->onPostSave($event);
     }
 }

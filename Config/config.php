@@ -18,8 +18,8 @@ return [
         ],
         'events'  => [
             'mautic.cdn.subscriber' => [
-                'class'     => \MauticPlugin\MauticCdnBundle\EventListener\OnPreSaveSubscriber::class,
-                'arguments' => ['mautic.cdn.config', '%mautic.site_url%'],
+                'class'     => \MauticPlugin\MauticCdnBundle\EventListener\OnPostSaveSubscriber::class,
+                'arguments' => ['mautic.cdn.config', 'mautic.email.model.email', '%mautic.site_url%'],
             ],
         ],
         'forms'        => [],
