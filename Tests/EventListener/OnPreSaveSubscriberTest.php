@@ -149,4 +149,40 @@ class OnPreSaveSubscriberTest extends TestCase
         $subscriber = new OnPostSaveSubscriber($config, $emailModel, $host);
         $subscriber->onPostSave($event);
     }
+
+    public function testEmptyHtml(): void
+    {
+        $host       = 'https://site.tld';
+        $cdn        = 'https://cdn.tld';
+        $extensions = ['jpg', 'mp4', 'pdf'];
+
+        $integration = $this->createMock(Integration::class);
+        $integration->method('getFeatureSettings')
+            ->willReturn(['integration' => ['cdn' => $cdn, 'extensions' => $extensions]]);
+
+        $email = $this->createMock(Email::class);
+        $email->expects(self::once())
+            ->method('getCustomHtml')
+            ->willReturn('');
+        $email->expects(self::never())
+            ->method('setCustomHtml');
+
+        $event = $this->createMock(EmailEvent::class);
+        $event->expects(self::once())
+            ->method('getEmail')
+            ->willReturn($email);
+
+        $config = $this->createMock(Config::class);
+        $config->method('isPublished')
+            ->willReturn(true);
+        $config->method('getIntegrationEntity')
+            ->willReturn($integration);
+
+        $emailModel = $this->createMock(EmailModel::class);
+        $emailModel->expects(self::never())
+            ->method('getRepository');
+
+        $subscriber = new OnPostSaveSubscriber($config, $emailModel, $host);
+        $subscriber->onPostSave($event);
+    }
 }

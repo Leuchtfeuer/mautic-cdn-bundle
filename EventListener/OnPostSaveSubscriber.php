@@ -49,16 +49,20 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
             return;
         }
 
+        $email = $event->getEmail();
+        $html  = $email->getCustomHtml();
+        assert(is_string($html));
+
+        if ('' === $html) {
+            return;
+        }
+
         $cdn              = $settings['cdn'];
         $extensions       = $settings['extensions'];
         $extensionsQuoted = array_map(static function (string $extension): string {
             return preg_quote($extension, '/');
         }, $extensions);
         $extensionsRegex = '/(?:'.implode('|', $extensionsQuoted).')(?:|\?[\w]*)$/';
-
-        $email = $event->getEmail();
-        $html  = $email->getCustomHtml();
-        assert(is_string($html));
 
         // no regex for HTML https://stackoverflow.com/a/1732454
         $crawler = new Crawler(null, null, $this->siteUrl);
