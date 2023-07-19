@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MauticCdnBundle\Integration;
+namespace MauticPlugin\LeuchtfeuerCdnBundle\Integration;
 
 use Mautic\IntegrationsBundle\Integration\BasicIntegration;
 use Mautic\IntegrationsBundle\Integration\ConfigurationTrait;
 use Mautic\IntegrationsBundle\Integration\Interfaces\BasicInterface;
 use Mautic\IntegrationsBundle\Integration\Interfaces\ConfigFormFeatureSettingsInterface;
-use MauticPlugin\MauticCdnBundle\Form\Type\FeatureSettingsType;
+use MauticPlugin\LeuchtfeuerCdnBundle\Form\Type\FeatureSettingsType;
 
 class CdnIntegration extends BasicIntegration implements BasicInterface, ConfigFormFeatureSettingsInterface
 {
@@ -30,7 +30,7 @@ class CdnIntegration extends BasicIntegration implements BasicInterface, ConfigF
 
     public function getIcon(): string
     {
-        return 'plugins/MauticCdnBundle/Assets/img/mautic-cdn-bundle.png';
+        return 'plugins/LeuchtfeuerCdnBundle/Assets/img/mautic-cdn-bundle.png';
     }
 
     public function getFeatureSettingsConfigFormName(): string

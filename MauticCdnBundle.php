@@ -1,9 +1,9 @@
 <?php
 
-namespace MauticPlugin\MauticCdnBundle;
+namespace MauticPlugin\LeuchtfeuerCdnBundle;
 
 use Mautic\IntegrationsBundle\Bundle\AbstractPluginBundle;
 
-class MauticCdnBundle extends AbstractPluginBundle
+class LeuchtfeuerCdnBundle extends AbstractPluginBundle
 {
 }
