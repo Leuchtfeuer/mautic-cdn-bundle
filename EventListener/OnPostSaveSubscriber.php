@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MauticCdnBundle\EventListener;
+namespace MauticPlugin\LeuchtfeuerCdnBundle\EventListener;
 
 use DOMAttr;
 use DOMElement;
 use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Event\EmailEvent;
 use Mautic\EmailBundle\Model\EmailModel;
-use MauticPlugin\MauticCdnBundle\Integration\Config;
+use MauticPlugin\LeuchtfeuerCdnBundle\Integration\Config;
 use RuntimeException;
 use Symfony\Component\DomCrawler\AbstractUriElement;
 use Symfony\Component\DomCrawler\Crawler;

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MauticCdnBundle\Tests\EventListener;
+namespace MauticPlugin\LeuchtfeuerCdnBundle\Tests\EventListener;
 
 use Mautic\EmailBundle\Entity\Email;
 use Mautic\EmailBundle\Entity\EmailRepository;
 use Mautic\EmailBundle\Event\EmailEvent;
 use Mautic\EmailBundle\Model\EmailModel;
 use Mautic\PluginBundle\Entity\Integration;
-use MauticPlugin\MauticCdnBundle\EventListener\OnPostSaveSubscriber;
-use MauticPlugin\MauticCdnBundle\Integration\Config;
+use MauticPlugin\LeuchtfeuerCdnBundle\EventListener\OnPostSaveSubscriber;
+use MauticPlugin\LeuchtfeuerCdnBundle\Integration\Config;
 use PHPUnit\Framework\TestCase;
 
 class OnPreSaveSubscriberTest extends TestCase

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MauticCdnBundle\Integration;
+namespace MauticPlugin\LeuchtfeuerCdnBundle\Integration;
 
 use Mautic\IntegrationsBundle\Exception\IntegrationNotFoundException;
 use Mautic\IntegrationsBundle\Helper\IntegrationsHelper;
@@ -33,7 +33,7 @@ class Config
      */
     public function getIntegrationEntity(): Integration
     {
-        $integrationObject = $this->integrationsHelper->getIntegration(CdnIntegration::NAME);
+        $integrationObject = $this->integrationsHelper->getIntegration(LeuchtfeuerCdnIntegration::NAME);
 
         return $integrationObject->getIntegrationConfiguration();
     }
