@@ -1,8 +1,13 @@
 # Serve assets from CDN in the Email by Leuchtfeuer
 
+### Works with
+Mautic 4 and Mautic 5 alpha
+
 ### Install
 1. Install bundle into LeuchtfeuerCdnBundle directory or via composer.
 2. Make sure the installation has the `symfony/dom-crawler` library, if you install not with composer.
+   * For Mautic 4 the `symfony/dom-crawler` library ~4.4.0 (>=4.4.0 <4.5.0) is needed.
+   * For Mautic 5 the `symfony/dom-crawler` library ~5.4.0 (>=5.4.0 <5.5.0) is needed.
 3. Enable bundle.
 
 ### How it works
