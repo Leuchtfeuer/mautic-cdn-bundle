@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MauticCdnBundle\Integration;
+namespace MauticPlugin\LeuchtfeuerCdnBundle\Integration;
 
 use Mautic\IntegrationsBundle\Integration\BasicIntegration;
 use Mautic\IntegrationsBundle\Integration\ConfigurationTrait;
 use Mautic\IntegrationsBundle\Integration\Interfaces\BasicInterface;
 use Mautic\IntegrationsBundle\Integration\Interfaces\ConfigFormFeatureSettingsInterface;
-use MauticPlugin\MauticCdnBundle\Form\Type\FeatureSettingsType;
+use MauticPlugin\LeuchtfeuerCdnBundle\Form\Type\FeatureSettingsType;
 
-class CdnIntegration extends BasicIntegration implements BasicInterface, ConfigFormFeatureSettingsInterface
+class LeuchtfeuerCdnIntegration extends BasicIntegration implements BasicInterface, ConfigFormFeatureSettingsInterface
 {
     use ConfigurationTrait;
 
     // there's probably a bug that does not allow this to be with the underscore like api_version
-    public const NAME         = 'cdn';
+    public const NAME         = 'leuchtfeuercdn';
     public const DISPLAY_NAME = 'CDN';
 
     public function getName(): string
@@ -30,7 +30,7 @@ class CdnIntegration extends BasicIntegration implements BasicInterface, ConfigF
 
     public function getIcon(): string
     {
-        return 'plugins/MauticCdnBundle/Assets/img/mautic-cdn-bundle.png';
+        return 'plugins/LeuchtfeuerCdnBundle/Assets/img/Leuchtfeuer-mautic-cdn.png';
     }
 
     public function getFeatureSettingsConfigFormName(): string

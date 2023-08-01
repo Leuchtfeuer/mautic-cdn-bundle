@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MauticCdnBundle\Tests\Form\Type;
+namespace MauticPlugin\LeuchtfeuerCdnBundle\Tests\Form\Type;
 
 use Mautic\CoreBundle\Form\Type\MultiselectType;
-use MauticPlugin\MauticCdnBundle\Form\Type\FeatureSettingsType;
+use MauticPlugin\LeuchtfeuerCdnBundle\Form\Type\FeatureSettingsType;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;

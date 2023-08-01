@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MauticCdnBundle\Form\Type;
+namespace MauticPlugin\LeuchtfeuerCdnBundle\Form\Type;
 
 use Mautic\CoreBundle\Form\Type\MultiselectType;
 use Symfony\Component\Form\AbstractType;
