@@ -1,7 +1,8 @@
 # Serve assets from CDN in the Email by Leuchtfeuer
 
 ### Works with
-Mautic 4 and Mautic 5 alpha
+* Mautic 4
+* Mautic 5 
 
 ### Install
 1. Install bundle into LeuchtfeuerCdnBundle directory or via composer.
