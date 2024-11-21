@@ -1,10 +1,15 @@
 <?php
 // copy of app/bundles/CoreBundle/Views/FormTheme/Custom/sortable_value_label_list_widget.html.php
-/*
+/**
+ * @var \Symfony\Component\Form\FormView               $form
+ * @var \Mautic\CoreBundle\Templating\Engine\PhpEngine $view
+ * @var array<mixed>                                   $preaddonAttr
+ * @var array<mixed>                                   $postaddonAttr
+ *
  * @copyright   2016 Mautic Contributors. All rights reserved
  * @author      Mautic
  *
- * @link        http://mautic.org
+ * @see        http://mautic.org
  *
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */

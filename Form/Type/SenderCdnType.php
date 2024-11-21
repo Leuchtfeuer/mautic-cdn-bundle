@@ -42,11 +42,16 @@ class SenderCdnType extends AbstractType
     }
 
     /**
-     * @param array<mixed> $options
+     * @param FormInterface<mixed> $form
+     * @param array<mixed>         $options
      */
     public function buildView(FormView $view, FormInterface $form, array $options): void
     {
         parent::buildView($view, $form, $options);
+
+        if (!is_array($options['attr'])) {
+            return;
+        }
 
         $view->vars['preaddonAttr']  = $options['attr']['preaddon_attr'] ?? [];
         $view->vars['postaddonAttr'] = $options['attr']['postaddon_attr'] ?? [];

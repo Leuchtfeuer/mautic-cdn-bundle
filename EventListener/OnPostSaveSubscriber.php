@@ -61,8 +61,9 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
         $extensions = $settings['extensions'];
 
         // The null value is when the "example" email is sent.
-        if (null !== $mailFrom = $email->getFromAddress()) {
-            $sentFromDomain = substr($mailFrom, strrpos($mailFrom, '@'));
+        $mailFrom = $email->getFromAddress();
+        if (is_string($mailFrom) && false !== $atPosition = strrpos($mailFrom, '@')) {
+            $sentFromDomain = substr($mailFrom, $atPosition);
             $senderCdn      = $settings['cdn_replace'] ?? [];
             foreach ($senderCdn as $sender => $cdnLink) {
                 if (!str_contains($sentFromDomain, $sender)) {

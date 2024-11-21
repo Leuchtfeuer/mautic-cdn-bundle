@@ -1,26 +1,34 @@
 <?php
 /**
  * This is a copy of app/bundles/CoreBundle/Views/FormTheme/Custom/sortablelist_row.html.php.
+ *
+ * @var \Symfony\Component\Form\FormView               $form
+ * @var \Mautic\CoreBundle\Templating\Engine\PhpEngine $view
+ * @var bool                                           $isSortable
+ * @var string|null                                    $label
+ * @var string                                         $addValueButton
  */
 $list            = $form->children['list'];
-$parentHasErrors = $view['form']->containsErrors($form->parent);
+/** @var \Mautic\CoreBundle\Templating\Helper\FormHelper $formHelper */
+$formHelper      = $view['form'];
+$parentHasErrors = $formHelper->containsErrors($form->parent);
 
 if ($parentHasErrors && empty($list->vars['value']) && isset($form->parent->children['properties']['list']) && null === $form->parent->vars['data']->getId()) {
     // Work around for Symfony bug not repopulating values only for add action
     $list = $form->parent->children['properties']['list'];
 }
-$hasErrors     = $view['form']->containsErrors($list);
+$hasErrors     = $formHelper->containsErrors($list);
 $feedbackClass = (!empty($hasErrors)) ? ' has-error' : '';
 $datePrototype = (isset($list->vars['prototype'])) ?
-    $view->escape('<div class="sortable">'.$view['form']->widget($list->vars['prototype']).'</div>') : '';
+    $view->escape('<div class="sortable">'.$formHelper->widget($list->vars['prototype']).'</div>') : '';
 
 ?>
 <div class="row">
     <div data-toggle="sortablelist" data-prefix="<?php echo $form->vars['id']; ?>" class="form-group col-xs-12 <?php echo $feedbackClass; ?>" id="<?php echo $form->vars['id']; ?>_list" style="overflow:auto">
-        <?php echo $view['form']->label($form, $label); ?>
-        <?php echo $view['form']->block($list, 'sortablelist_errors'); ?>
+        <?php echo $formHelper->label($form, $label); ?>
+        <?php echo $formHelper->block($list, 'sortablelist_errors'); ?>
         <div class="help-block">
-            <?php echo $view['form']->help($form); ?>
+            <?php echo $formHelper->help($form); ?>
         </div>
         <?php if ($isSortable): ?>
         <div id="sortable-<?php echo $form->vars['id']; ?>" class="list-sortable" <?php foreach ($attr as $k => $v) {
@@ -28,7 +36,7 @@ $datePrototype = (isset($list->vars['prototype'])) ?
 }?>>
             <?php endif; ?>
             <?php foreach ($list->children as $key => $item): ?>
-                <?php echo $view['form']->block($item, 'sortablelist_entry_row'); ?>
+                <?php echo $formHelper->block($item, 'sortablelist_entry_row'); ?>
             <?php endforeach; ?>
         </div>
         <div class="pt-sm">

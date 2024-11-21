@@ -11,4 +11,5 @@ parameters:
         - .
     excludePaths:
         - vendor
+        - Views
 
