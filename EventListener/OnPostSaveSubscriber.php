@@ -57,12 +57,30 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $cdn              = $settings['cdn'];
-        $extensions       = $settings['extensions'];
+        $cdn        = $settings['cdn'];
+        $extensions = $settings['extensions'];
+
+        // The null value is when the "example" email is sent.
+        if (null !== $mailFrom = $email->getFromAddress()) {
+            $sentFromDomain = substr($mailFrom, strrpos($mailFrom, '@'));
+            $senderCdn      = $settings['cdn_replace'] ?? [];
+            foreach ($senderCdn as $sender => $cdnLink) {
+                if (!str_contains($sentFromDomain, $sender)) {
+                    continue;
+                }
+
+                $cdn = $cdnLink;
+            }
+        }
+
+        if ('' === $cdn) {
+            return;
+        }
+
         $extensionsQuoted = array_map(static function (string $extension): string {
             return preg_quote($extension, '/');
         }, $extensions);
-        $extensionsRegex = '/(?:'.implode('|', $extensionsQuoted).')(?:|\?[\w]*)$/';
+        $extensionsRegex = '/(?:'.implode('|', $extensionsQuoted).')(?:|\?[\w]*)(?:$|\'|")/';
 
         // no regex for HTML https://stackoverflow.com/a/1732454
         $crawler = new Crawler(null, null, $this->siteUrl);
@@ -79,6 +97,9 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
         }
 
         $this->replaceElement($crawler->filter('source'), $extensionsRegex, $cdn, 'src');
+        $this->replaceElement($crawler->filter('link'), $extensionsRegex, $cdn, 'href');
+        $this->replaceElement($crawler->filter('[style]'), $extensionsRegex, $cdn, 'style');
+        $this->replaceElement($crawler->filter('[background]'), $extensionsRegex, $cdn, 'background');
         $html = $crawler->html();
 
         $email->setCustomHtml($html);
@@ -129,7 +150,7 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
     {
         $elements->each(function (Crawler $crawler) use ($extensionsRegex, $cdn, $attribute): void {
             $node = $crawler->getNode(0);
-            if (null === $node || null === $node->attributes || !$node instanceof DOMElement) {
+            if (!$node instanceof DOMElement || null === $node->attributes) {
                 return;
             }
 
