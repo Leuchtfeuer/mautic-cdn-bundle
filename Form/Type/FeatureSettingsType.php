@@ -42,15 +42,16 @@ class FeatureSettingsType extends AbstractType
             'cdn_replace',
             SortableListType::class,
             [
-                'required'        => false,
-                'label'           => 'plugin.cdn.settings.form.replace',
-                'option_required' => false,
-                'with_labels'     => false, // Needed to invoke a custom form type.
-                'entry_type'      => SenderCdnType::class,
-                'key_value_pairs' => true,
-                'attr'            => ['tooltip' => 'plugin.cdn.settings.form.replace_help'],
-                'help'            => 'plugin.cdn.settings.form.replace_help_extended',
-                'help_html'       => true,
+                'required'         => false,
+                'label'            => 'plugin.cdn.settings.form.replace',
+                'option_required'  => false,
+                'with_labels'      => false, // Needed to invoke a custom form type.
+                'entry_type'       => SenderCdnType::class,
+                'key_value_pairs'  => true,
+                'attr'             => ['tooltip' => 'plugin.cdn.settings.form.replace_help'],
+                'help'             => 'plugin.cdn.settings.form.replace_help_extended',
+                'help_html'        => true,
+                'add_value_button' => 'plugin.cdn.settings.form.replace_button',
             ]
         );
 
@@ -63,7 +64,8 @@ class FeatureSettingsType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefault('default_theme', 'LeuchtfeuerCdnBundle:FormTheme\Custom');
+        // Needed for M4
+        $resolver->setDefault('default_theme', version_compare(MAUTIC_VERSION, '5.0', '<') ? 'LeuchtfeuerCdnBundle:FormTheme\Custom' : '@LeuchtfeuerCdn/FormTheme/Custom');
         $resolver->setAllowedTypes('default_theme', 'string');
     }
 }

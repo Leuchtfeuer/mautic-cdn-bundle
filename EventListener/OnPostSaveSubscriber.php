@@ -63,7 +63,7 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
         // The null value is when the "example" email is sent.
         $mailFrom = $email->getFromAddress();
         if (is_string($mailFrom) && false !== $atPosition = strrpos($mailFrom, '@')) {
-            $sentFromDomain = substr($mailFrom, $atPosition);
+            $sentFromDomain = substr($mailFrom, $atPosition + 1);
             $senderCdn      = $settings['cdn_replace'] ?? [];
             foreach ($senderCdn as $sender => $cdnLink) {
                 if (!str_contains($sentFromDomain, $sender)) {
@@ -71,6 +71,7 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
                 }
 
                 $cdn = $cdnLink;
+                break;
             }
         }
 
@@ -129,7 +130,8 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
                 continue;
             }
 
-            if (false === strpos($href, $this->siteUrl)) {
+            // Not str_starts_with, because "style" attribute can contain the URL in the middle of a string.
+            if (false === str_contains($href, $this->siteUrl)) {
                 continue;
             }
 
@@ -151,7 +153,7 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
     {
         $elements->each(function (Crawler $crawler) use ($extensionsRegex, $cdn, $attribute): void {
             $node = $crawler->getNode(0);
-            if (!$node instanceof DOMElement || null === $node->attributes) {
+            if (!$node instanceof DOMElement) {
                 return;
             }
 
@@ -161,7 +163,7 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
                 return;
             }
 
-            if (false === strpos($hrefAttribute->value, $this->siteUrl)) {
+            if (false === str_contains($hrefAttribute->value, $this->siteUrl)) {
                 return;
             }
 

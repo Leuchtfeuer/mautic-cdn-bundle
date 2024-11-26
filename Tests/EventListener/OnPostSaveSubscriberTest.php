@@ -13,7 +13,7 @@ use MauticPlugin\LeuchtfeuerCdnBundle\EventListener\OnPostSaveSubscriber;
 use MauticPlugin\LeuchtfeuerCdnBundle\Integration\Config;
 use PHPUnit\Framework\TestCase;
 
-class OnPreSaveSubscriberTest extends TestCase
+class OnPostSaveSubscriberTest extends TestCase
 {
     public function testNotEnabled(): void
     {
@@ -233,6 +233,114 @@ class OnPreSaveSubscriberTest extends TestCase
 
         $subscriber = new OnPostSaveSubscriber($config, $emailModel, $host);
         $subscriber->onPostSave($event);
+    }
+
+    /**
+     * @dataProvider provideTestData
+     */
+    public function testReplaceCheck(string $expectedHost, string $fromAddress, bool $hasReplacement): void
+    {
+        $host       = 'https://site.tld';
+        $otherHost  = 'https://other.tld';
+        $cdn        = 'https://cdn.a.com';
+        $extensions = ['jpg', 'mp4', 'pdf', 'css'];
+        $html       = '<body>'.
+            '<a href="'.$host.'/file.pdf">Link</a>'.
+            '<a href="'.$otherHost.'/file.pdf">Link</a>'.
+            '<img src="'.$host.'/image.jpg">'.
+            '<img src="'.$otherHost.'/image.jpg">'.
+            '<img alt="">'.
+            '<video><source src="'.$host.'/video.mp4"></source></video>'.
+            '<video><source src="'.$otherHost.'/video.mp4"></source></video>'.
+            '<table style="background:#ffffff url(\''.$host.'/img.jpg?version\') center top / auto repeat;"></table>'.
+            '<table style="background:#ffffff url(\''.$otherHost.'/img.jpg?version\') center top / auto repeat;"></table>'.
+            '<table background="'.$host.'/bg.jpg?version"></table>'.
+            '<table background="'.$otherHost.'/bg.jpg?version"></table>'.
+            '<img src="'.$host.'/image.gif">'. // This should not be replaced, because .gif is not in the extensions to replace!
+            '<img src="'.$otherHost.'/image.gif">'.
+            '<link rel="stylesheet" href="'.$host.'/css.css?version" />'.
+            '<link rel="stylesheet" href="'.$otherHost.'/css.css?version" />'.
+            '<link />'.
+            '</body>';
+        $replacedHtml = '<body>'.
+            '<a href="'.$expectedHost.'/file.pdf">Link</a>'.
+            '<a href="'.$otherHost.'/file.pdf">Link</a>'.
+            '<img src="'.$expectedHost.'/image.jpg">'.
+            '<img src="'.$otherHost.'/image.jpg">'.
+            '<img alt="">'.
+            '<video><source src="'.$expectedHost.'/video.mp4"></source></video>'.
+            '<video><source src="'.$otherHost.'/video.mp4"></source></video>'.
+            '<table style="background:#ffffff url(\''.$expectedHost.'/img.jpg?version\') center top / auto repeat;"></table>'.
+            '<table style="background:#ffffff url(\''.$otherHost.'/img.jpg?version\') center top / auto repeat;"></table>'.
+            '<table background="'.$expectedHost.'/bg.jpg?version"></table>'.
+            '<table background="'.$otherHost.'/bg.jpg?version"></table>'.
+            '<img src="'.$host.'/image.gif">'.
+            '<img src="'.$otherHost.'/image.gif">'.
+            '<link rel="stylesheet" href="'.$expectedHost.'/css.css?version">'.
+            '<link rel="stylesheet" href="'.$otherHost.'/css.css?version">'.
+            '<link>'.
+            '</body>';
+
+        $integration = $this->createMock(Integration::class);
+        $integration->method('getFeatureSettings')
+            ->willReturn([
+                'integration' => [
+                    'cdn'         => $cdn,
+                    'extensions'  => $extensions,
+                    'cdn_replace' => [
+                        'b.com'      => 'https://cdn.b.com',
+                        'news.c.com' => 'https://news.c.com',
+                        'c.com'      => 'https://cdn.c.com',
+                        'd.com'      => '',
+                        'news.d.com' => 'https://cdn.d.com',
+                    ],
+                ],
+            ]);
+
+        $email = $this->createMock(Email::class);
+        $email->expects(self::once())
+            ->method('getCustomHtml')
+            ->willReturn($html);
+        $email->expects(self::once())
+            ->method('getFromAddress')
+            ->willReturn($fromAddress);
+        $email->expects(self::exactly($hasReplacement ? 1 : 0))
+            ->method('setCustomHtml')
+            ->with($replacedHtml);
+
+        $event = $this->createMock(EmailEvent::class);
+        $event->expects(self::once())
+            ->method('getEmail')
+            ->willReturn($email);
+
+        $config = $this->createMock(Config::class);
+        $config->method('isPublished')
+            ->willReturn(true);
+        $config->method('getIntegrationEntity')
+            ->willReturn($integration);
+
+        $emailRepository = $this->createMock(EmailRepository::class);
+        $emailRepository->expects(self::exactly($hasReplacement ? 1 : 0))
+            ->method('saveEntity')
+            ->with($email);
+
+        $emailModel = $this->createMock(EmailModel::class);
+        $emailModel->expects(self::exactly($hasReplacement ? 1 : 0))
+            ->method('getRepository')
+            ->willReturn($emailRepository);
+
+        $subscriber = new OnPostSaveSubscriber($config, $emailModel, $host);
+        $subscriber->onPostSave($event);
+    }
+
+    public static function provideTestData(): \Generator
+    {
+        yield 'me@x.com' => ['https://cdn.a.com', 'me@x.com', true];
+        yield 'me@b.com' => ['https://cdn.b.com', 'me@b.com', true];
+        yield 'me@news.c.com' => ['https://news.c.com', 'me@news.c.com', true];
+        yield 'me@c.com' => ['https://cdn.c.com', 'me@c.com', true];
+        yield 'me@d.com' => ['https://site.tld', 'me@d.com', false]; // No replacement, keep the site_url
+        yield 'me@news.d.com' => ['https://site.tld', 'me@news.d.com', false]; // No replacement, keep the site_url (because more general match above)
     }
 
     public function testNoReplaceWithSpecificEmpty(): void
