@@ -7,8 +7,7 @@ namespace MauticPlugin\LeuchtfeuerCdnBundle\EventListener;
 use DOMAttr;
 use DOMElement;
 use Mautic\EmailBundle\EmailEvents;
-use Mautic\EmailBundle\Event\EmailEvent;
-use Mautic\EmailBundle\Model\EmailModel;
+use Mautic\EmailBundle\Event\EmailSendEvent;
 use MauticPlugin\LeuchtfeuerCdnBundle\Integration\Config;
 use RuntimeException;
 use Symfony\Component\DomCrawler\AbstractUriElement;
@@ -17,23 +16,43 @@ use Symfony\Component\DomCrawler\Image;
 use Symfony\Component\DomCrawler\Link;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-class OnPostSaveSubscriber implements EventSubscriberInterface
+class OnEmailSendSubscriber implements EventSubscriberInterface
 {
     private Config $config;
 
-    private EmailModel $emailModel;
-
     private string $siteUrl;
 
-    public function __construct(Config $config, EmailModel $emailModel, string $host)
+    /**
+     * @var array<int, true>
+     */
+    private array $replaced = [];
+
+    public function __construct(Config $config, string $host)
     {
-        $this->config     = $config;
-        $this->emailModel = $emailModel;
-        $this->siteUrl    = $host;
+        $this->config  = $config;
+        $this->siteUrl = rtrim($host, '/');
     }
 
-    public function onPostSave(EmailEvent $event): void
+    public function onSend(EmailSendEvent $event): void
     {
+        $helper = $event->getHelper();
+
+        if (null === $helper) {
+            return;
+        }
+
+        $email = $event->getEmail();
+
+        if (null === $email || null === $email->getId()) {
+            return;
+        }
+
+        if (isset($this->replaced[$email->getId()])) {
+            return;
+        }
+
+        $this->replaced[$email->getId()] = true;
+
         if (!$this->config->isPublished()) {
             return;
         }
@@ -49,7 +68,6 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $email = $event->getEmail();
         $html  = $email->getCustomHtml();
         assert(is_string($html));
 
@@ -75,9 +93,11 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
             }
         }
 
-        if ('' === $cdn) {
+        if ('' === $cdn || null === $cdn) {
             return;
         }
+
+        $cdn = rtrim($cdn, '/');
 
         $extensionsQuoted = array_map(static function (string $extension): string {
             return preg_quote($extension, '/');
@@ -104,18 +124,15 @@ class OnPostSaveSubscriber implements EventSubscriberInterface
         $this->replaceElement($crawler->filter('[background]'), $extensionsRegex, $cdn, 'background');
         $html = $crawler->html();
 
-        $email->setCustomHtml($html);
-        $this->emailModel->getRepository()->saveEntity($email);
+        $helper->setBody($html);
     }
 
     /**
-     * @return array<string, array<int, string|int>|string>
+     * @return array<string, array<int, string|int>>
      */
     public static function getSubscribedEvents(): array
     {
-        return [
-            EmailEvents::EMAIL_POST_SAVE => ['onPostSave', -255],
-        ];
+        return [EmailEvents::EMAIL_ON_SEND => ['onSend', -255]];
     }
 
     /**

@@ -18,8 +18,8 @@ return [
         ],
         'events'  => [
             'mautic.leuchtfeuercdn.subscriber' => [
-                'class'     => \MauticPlugin\LeuchtfeuerCdnBundle\EventListener\OnPostSaveSubscriber::class,
-                'arguments' => ['mautic.leuchtfeuercdn.config', 'mautic.email.model.email', '%mautic.site_url%'],
+                'class'     => \MauticPlugin\LeuchtfeuerCdnBundle\EventListener\OnEmailSendSubscriber::class,
+                'arguments' => ['mautic.leuchtfeuercdn.config', '%mautic.site_url%'],
             ],
         ],
         'forms'        => [],
