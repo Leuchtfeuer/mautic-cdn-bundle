@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\LeuchtfeuerCdnBundle\Tests\EventListener;
+namespace MauticPlugin\LeuchtfeuerCdnBundle\Tests\Unit\EventListener;
 
 use Mautic\EmailBundle\Entity\Email;
 use Mautic\EmailBundle\Event\EmailSendEvent;
@@ -15,6 +15,24 @@ use PHPUnit\Framework\TestCase;
 
 class OnEmailSendSubscriberTest extends TestCase
 {
+    public function testNotPublished(): void
+    {
+        $host = 'https://site.tld';
+
+        $event = $this->createMock(EmailSendEvent::class);
+        $event->expects(self::never())
+            ->method('getHelper');
+        $event->expects(self::never())
+            ->method('getEmail');
+
+        $config = $this->createMock(Config::class);
+        $config->method('isPublished')
+            ->willReturn(false);
+
+        $subscriber = new OnEmailSendSubscriber($config, $host);
+        $subscriber->onSend($event);
+    }
+
     public function testNoEmailHelper(): void
     {
         $host = 'https://site.tld';
@@ -28,7 +46,7 @@ class OnEmailSendSubscriberTest extends TestCase
 
         $config = $this->createMock(Config::class);
         $config->method('isPublished')
-            ->willReturn(false);
+            ->willReturn(true);
 
         $subscriber = new OnEmailSendSubscriber($config, $host);
         $subscriber->onSend($event);
@@ -51,62 +69,7 @@ class OnEmailSendSubscriberTest extends TestCase
 
         $config = $this->createMock(Config::class);
         $config->method('isPublished')
-            ->willReturn(false);
-
-        $subscriber = new OnEmailSendSubscriber($config, $host);
-        $subscriber->onSend($event);
-    }
-
-    public function testEmailNoId(): void
-    {
-        $host = 'https://site.tld';
-
-        $emailHelper = $this->createMock(MailHelper::class);
-        $emailHelper->expects(self::never())
-            ->method('setBody');
-        $email = $this->createMock(Email::class);
-        $email->expects(self::once())
-            ->method('getId')
-            ->willReturn(null);
-        $event = $this->createMock(EmailSendEvent::class);
-        $event->expects(self::once())
-            ->method('getHelper')
-            ->willReturn($emailHelper);
-        $event->expects(self::once())
-            ->method('getEmail')
-            ->willReturn($email);
-
-        $config = $this->createMock(Config::class);
-        $config->method('isPublished')
-            ->willReturn(false);
-
-        $subscriber = new OnEmailSendSubscriber($config, $host);
-        $subscriber->onSend($event);
-    }
-
-    public function testNotEnabled(): void
-    {
-        $host    = 'https://site.tld';
-        $emailId = 7262626;
-
-        $emailHelper = $this->createMock(MailHelper::class);
-        $emailHelper->expects(self::never())
-            ->method('setBody');
-        $email = $this->createMock(Email::class);
-        $email->method('getId')
-            ->willReturn($emailId);
-        $event = $this->createMock(EmailSendEvent::class);
-        $event->expects(self::once())
-            ->method('getHelper')
-            ->willReturn($emailHelper);
-        $event->expects(self::once())
-            ->method('getEmail')
-            ->willReturn($email);
-
-        $config = $this->createMock(Config::class);
-        $config->expects(self::once())
-            ->method('isPublished')
-            ->willReturn(false);
+            ->willReturn(true);
 
         $subscriber = new OnEmailSendSubscriber($config, $host);
         $subscriber->onSend($event);
@@ -115,7 +78,6 @@ class OnEmailSendSubscriberTest extends TestCase
     public function testNoIntegrationSettings(): void
     {
         $host    = 'https://site.tld';
-        $emailId = 7262626;
 
         $integration = $this->createMock(Integration::class);
         $integration->method('getFeatureSettings')
@@ -125,8 +87,6 @@ class OnEmailSendSubscriberTest extends TestCase
         $emailHelper->expects(self::never())
             ->method('setBody');
         $email = $this->createMock(Email::class);
-        $email->method('getId')
-            ->willReturn($emailId);
         $event = $this->createMock(EmailSendEvent::class);
         $event->method('getHelper')
             ->willReturn($emailHelper);
@@ -134,7 +94,7 @@ class OnEmailSendSubscriberTest extends TestCase
             ->willReturn($email);
 
         $config = $this->createMock(Config::class);
-        $config->expects(self::once()) // To check the early caching.
+        $config->expects(self::once())
             ->method('isPublished')
             ->willReturn(true);
         $config->method('getIntegrationEntity')
@@ -146,9 +106,6 @@ class OnEmailSendSubscriberTest extends TestCase
 
         $subscriber = new OnEmailSendSubscriber($config, $host);
         $subscriber->onSend($event);
-
-        // Call once again with the same parameters to check "early caching"
-        $subscriber->onSend($event);
     }
 
     /**
@@ -158,7 +115,6 @@ class OnEmailSendSubscriberTest extends TestCase
     public function testEmptyCdnSetting(array $settings): void
     {
         $host    = 'https://site.tld';
-        $emailId = 352111;
 
         $integration = $this->createMock(Integration::class);
         $integration->method('getFeatureSettings')
@@ -168,8 +124,6 @@ class OnEmailSendSubscriberTest extends TestCase
         $emailHelper->expects(self::never())
             ->method('setBody');
         $email = $this->createMock(Email::class);
-        $email->method('getId')
-            ->willReturn($emailId);
         $event = $this->createMock(EmailSendEvent::class);
         $event->method('getHelper')
             ->willReturn($emailHelper);
@@ -198,7 +152,7 @@ class OnEmailSendSubscriberTest extends TestCase
 
     public function testReplaceWithDefault(): void
     {
-        $emailId    = 22341;
+        $hash       = 'Aasiud8a78ASD';
         $host       = 'https://site.tld';
         $cdn        = 'https://cdn.tld';
         $extensions = ['jpg', 'mp4', 'pdf', 'css'];
@@ -226,11 +180,8 @@ class OnEmailSendSubscriberTest extends TestCase
             ]);
 
         $email = $this->createMock(Email::class);
-        $email->method('getId')
-            ->willReturn($emailId);
-        $email->expects(self::once())
-            ->method('getCustomHtml')
-            ->willReturn($html);
+        $email->expects(self::never())
+            ->method('getCustomHtml');
         $email->expects(self::once())
             ->method('getFromAddress')
             ->willReturn('some@strange.domain.com');
@@ -239,13 +190,20 @@ class OnEmailSendSubscriberTest extends TestCase
 
         $emailHelper = $this->createMock(MailHelper::class);
         $emailHelper->expects(self::once())
-            ->method('setBody')
-            ->with($replacedHtml);
+            ->method('getContentHash')
+            ->willReturn($hash);
         $event = $this->createMock(EmailSendEvent::class);
         $event->method('getHelper')
             ->willReturn($emailHelper);
         $event->method('getEmail')
             ->willReturn($email);
+        $event->expects(self::once())
+            ->method('getContent')
+            ->with(false)
+            ->willReturn($html);
+        $event->expects(self::once())
+            ->method('setContent')
+            ->with($replacedHtml);
 
         $config = $this->createMock(Config::class);
         $config->method('isPublished')
@@ -259,7 +217,6 @@ class OnEmailSendSubscriberTest extends TestCase
 
     public function testReplaceDifferentSlashes(): void
     {
-        $emailId    = 22341;
         $host       = 'https://site.tld';
         $cdn        = 'https://cdn.tld/';
         $extensions = ['jpg', 'mp4', 'pdf', 'css'];
@@ -287,11 +244,8 @@ class OnEmailSendSubscriberTest extends TestCase
             ]);
 
         $email = $this->createMock(Email::class);
-        $email->method('getId')
-            ->willReturn($emailId);
-        $email->expects(self::once())
-            ->method('getCustomHtml')
-            ->willReturn($html);
+        $email->expects(self::never())
+            ->method('getCustomHtml');
         $email->expects(self::once())
             ->method('getFromAddress')
             ->willReturn('some@strange.domain.com');
@@ -299,14 +253,20 @@ class OnEmailSendSubscriberTest extends TestCase
             ->method('setCustomHtml');
 
         $emailHelper = $this->createMock(MailHelper::class);
-        $emailHelper->expects(self::once())
-            ->method('setBody')
-            ->with($replacedHtml);
+        $emailHelper->expects(self::never())
+            ->method('setBody');
         $event = $this->createMock(EmailSendEvent::class);
         $event->method('getHelper')
             ->willReturn($emailHelper);
         $event->method('getEmail')
             ->willReturn($email);
+        $event->expects(self::once())
+            ->method('getContent')
+            ->with(false)
+            ->willReturn($html);
+        $event->expects(self::once())
+            ->method('setContent')
+            ->with($replacedHtml);
 
         $config = $this->createMock(Config::class);
         $config->method('isPublished')
@@ -320,7 +280,6 @@ class OnEmailSendSubscriberTest extends TestCase
 
     public function testReplaceWithSpecific(): void
     {
-        $emailId    = 7262626;
         $host       = 'https://site.tld';
         $cdn        = 'https://cdn.tld';
         $extensions = ['jpg', 'mp4', 'pdf', 'css'];
@@ -358,11 +317,8 @@ class OnEmailSendSubscriberTest extends TestCase
             ]);
 
         $email = $this->createMock(Email::class);
-        $email->method('getId')
-            ->willReturn($emailId);
-        $email->expects(self::once())
-            ->method('getCustomHtml')
-            ->willReturn($html);
+        $email->expects(self::never())
+            ->method('getCustomHtml');
         $email->expects(self::once())
             ->method('getFromAddress')
             ->willReturn('some@strange.domain.com');
@@ -370,14 +326,20 @@ class OnEmailSendSubscriberTest extends TestCase
             ->method('setCustomHtml');
 
         $emailHelper = $this->createMock(MailHelper::class);
-        $emailHelper->expects(self::once())
-            ->method('setBody')
-            ->with($replacedHtml);
+        $emailHelper->expects(self::never())
+            ->method('setBody');
         $event = $this->createMock(EmailSendEvent::class);
         $event->method('getHelper')
             ->willReturn($emailHelper);
         $event->method('getEmail')
             ->willReturn($email);
+        $event->expects(self::once())
+            ->method('getContent')
+            ->with(false)
+            ->willReturn($html);
+        $event->expects(self::once())
+            ->method('setContent')
+            ->with($replacedHtml);
 
         $config = $this->createMock(Config::class);
         $config->method('isPublished')
@@ -394,7 +356,6 @@ class OnEmailSendSubscriberTest extends TestCase
      */
     public function testReplaceCheck(string $expectedHost, string $fromAddress, bool $hasReplacement): void
     {
-        $emailId    = 7262626;
         $host       = 'https://site.tld';
         $otherHost  = 'https://other.tld';
         $cdn        = 'https://cdn.a.com';
@@ -455,11 +416,8 @@ class OnEmailSendSubscriberTest extends TestCase
             ]);
 
         $email = $this->createMock(Email::class);
-        $email->method('getId')
-            ->willReturn($emailId);
-        $email->expects(self::once())
-            ->method('getCustomHtml')
-            ->willReturn($html);
+        $email->expects(self::never())
+            ->method('getCustomHtml');
         $email->expects(self::once())
             ->method('getFromAddress')
             ->willReturn($fromAddress);
@@ -467,14 +425,20 @@ class OnEmailSendSubscriberTest extends TestCase
             ->method('setCustomHtml');
 
         $emailHelper = $this->createMock(MailHelper::class);
-        $emailHelper->expects(self::exactly($hasReplacement ? 1 : 0))
-            ->method('setBody')
-            ->with($replacedHtml);
+        $emailHelper->expects(self::never())
+            ->method('setBody');
         $event = $this->createMock(EmailSendEvent::class);
         $event->method('getHelper')
             ->willReturn($emailHelper);
         $event->method('getEmail')
             ->willReturn($email);
+        $event->expects(self::once())
+            ->method('getContent')
+            ->with(false)
+            ->willReturn($html);
+        $event->expects(self::exactly($hasReplacement ? 1 : 0))
+            ->method('setContent')
+            ->with($replacedHtml);
 
         $config = $this->createMock(Config::class);
         $config->method('isPublished')
@@ -500,7 +464,6 @@ class OnEmailSendSubscriberTest extends TestCase
 
     public function testNoReplaceWithSpecificEmpty(): void
     {
-        $emailId    = 7262626;
         $host       = 'https://site.tld';
         $cdn        = 'https://cdn.tld';
         $extensions = ['jpg', 'mp4', 'pdf', 'css'];
@@ -516,11 +479,8 @@ class OnEmailSendSubscriberTest extends TestCase
             ]);
 
         $email = $this->createMock(Email::class);
-        $email->method('getId')
-            ->willReturn($emailId);
-        $email->expects(self::once())
-            ->method('getCustomHtml')
-            ->willReturn('<body>');
+        $email->expects(self::never())
+            ->method('getCustomHtml');
         $email->expects(self::once())
             ->method('getFromAddress')
             ->willReturn('some@strange.domain.com');
@@ -535,6 +495,12 @@ class OnEmailSendSubscriberTest extends TestCase
             ->willReturn($emailHelper);
         $event->method('getEmail')
             ->willReturn($email);
+        $event->expects(self::once())
+            ->method('getContent')
+            ->with(false)
+            ->willReturn('<body>');
+        $event->expects(self::never())
+            ->method('setContent');
 
         $config = $this->createMock(Config::class);
         $config->method('isPublished')
@@ -548,7 +514,6 @@ class OnEmailSendSubscriberTest extends TestCase
 
     public function testEmptyHtml(): void
     {
-        $emailId    = 7262626;
         $host       = 'https://site.tld';
         $cdn        = 'https://cdn.tld';
         $extensions = ['jpg', 'mp4', 'pdf'];
@@ -558,11 +523,8 @@ class OnEmailSendSubscriberTest extends TestCase
             ->willReturn(['integration' => ['cdn' => $cdn, 'extensions' => $extensions]]);
 
         $email = $this->createMock(Email::class);
-        $email->method('getId')
-            ->willReturn($emailId);
-        $email->expects(self::once())
-            ->method('getCustomHtml')
-            ->willReturn('');
+        $email->expects(self::never())
+            ->method('getCustomHtml');
         $email->expects(self::never())
             ->method('setCustomHtml');
 
@@ -574,6 +536,12 @@ class OnEmailSendSubscriberTest extends TestCase
             ->willReturn($emailHelper);
         $event->method('getEmail')
             ->willReturn($email);
+        $event->expects(self::once())
+            ->method('getContent')
+            ->with(false)
+            ->willReturn('');
+        $event->expects(self::never())
+            ->method('setContent');
 
         $config = $this->createMock(Config::class);
         $config->method('isPublished')

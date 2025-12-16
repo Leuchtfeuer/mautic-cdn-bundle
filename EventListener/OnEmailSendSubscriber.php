@@ -23,7 +23,7 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
     private string $siteUrl;
 
     /**
-     * @var array<int, true>
+     * @var array<string, string>
      */
     private array $replaced = [];
 
@@ -35,6 +35,10 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
 
     public function onSend(EmailSendEvent $event): void
     {
+        if (!$this->config->isPublished()) {
+            return;
+        }
+
         $helper = $event->getHelper();
 
         if (null === $helper) {
@@ -43,17 +47,14 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
 
         $email = $event->getEmail();
 
-        if (null === $email || null === $email->getId()) {
+        if (null === $email) {
             return;
         }
 
-        if (isset($this->replaced[$email->getId()])) {
-            return;
-        }
+        $contentHash = $helper->getContentHash();
+        if (isset($this->replaced[$contentHash])) {
+            $event->setContent($this->replaced[$contentHash]);
 
-        $this->replaced[$email->getId()] = true;
-
-        if (!$this->config->isPublished()) {
             return;
         }
 
@@ -68,7 +69,7 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $html  = $email->getCustomHtml();
+        $html = $event->getContent();
         assert(is_string($html));
 
         if ('' === $html) {
@@ -124,7 +125,14 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
         $this->replaceElement($crawler->filter('[background]'), $extensionsRegex, $cdn, 'background');
         $html = $crawler->html();
 
-        $helper->setBody($html);
+        // Replace the token separator, save for future emails with same content.
+        $this->replaced[$contentHash] = $content = str_replace(
+            ['"%7B', '%7D"'],
+            ['"{', '}"'],
+            $html
+        );
+
+        $event->setContent($content);
     }
 
     /**

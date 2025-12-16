@@ -8,7 +8,154 @@ on:
       - 'MTC\-[0-9]+-bugfix'
   pull_request:
 
+env:
+  PLUGIN_DIR: plugins/LeuchtfeuerCdnBundle # Same as extra.install-directory-name in composer.json
+
 jobs:
+  phpunit:
+    name: PHPUnit ${{ matrix.php-versions }}, ${{ matrix.db-types }}, Mautic ${{ matrix.mautic-versions }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-versions: [ '8.0', '8.1' ]
+        db-types: [ 'mysql', 'mariadb' ]
+        mautic-versions: [ '5.1', '5.2', '5.x' ]
+        include:
+          - mautic-versions: 5.1
+            php-versions: 8.2
+          - mautic-versions: 5.2
+            php-versions: 8.2
+          - mautic-versions: 5.2
+            php-versions: 8.3
+          - mautic-versions: 5.x
+            php-versions: 8.2
+          - mautic-versions: 5.x
+            php-versions: 8.3
+        exclude:
+          - mautic-versions: 5.x # 5.2 will not support php-8.0
+            php-versions: 8.0
+          - mautic-versions: 5.2 # 5.2 will not support php-8.0
+            php-versions: 8.0
+    services:
+      database:
+        image: ${{ matrix.db-types == 'mysql' && 'mysql:8.0' || 'mariadb:10.3' }}
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: mautictest
+        ports:
+          - 3306
+        options: >-
+          --shm-size=2gb
+          --name=${{ matrix.db-types }}
+          --tmpfs=/var/lib/mysql
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+    steps:
+      - name: Checkout Mautic
+        uses: actions/checkout@v4
+        with:
+          repository: mautic/mautic
+          ref: ${{ matrix.mautic-versions }}
+          fetch-depth: 0
+
+      - name: Checkout this plugin
+        uses: actions/checkout@v4
+        with:
+          path: ${{ env.PLUGIN_DIR }}
+
+      - name: Setup PHP Environment
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-versions }}
+          ini-values: pcov.enabled=0, pcov.directory=., pcov.exclude="~tests|themes|vendor~", opcache.enable_cli=0
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, mysql, pdo_mysql
+          coverage: pcov
+
+      - name: add MySQL config file
+        run: |
+          mysqldump --version
+          mysqldump --print-defaults
+          cp .github/ci-files/.my.cnf ~/.my.cnf
+          mysqldump --print-defaults
+
+      - name: Set SYMFONY_ENV to test
+        run: |
+          echo "SYMFONY_ENV=test" >> $GITHUB_ENV
+          echo "MAUTIC_ENV=test" >> $GITHUB_ENV
+
+      - name: NPM Cache
+        uses: actions/cache@v4
+        with:
+          path: ./var/cache/js
+          key: ${{ runner.os }}-js-${{ hashFiles('**/package-lock.json', 'webpack.config.js') }}-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-js-${{ hashFiles('**/package-lock.json', 'webpack.config.js') }}
+            ${{ runner.os }}-js-
+
+      - name: Install dependency
+        run: |
+          composer require leuchtfeuer/mautic-mailjetadapter-bundle:^1.0
+
+      - name: Install composer requirements.
+        # composer install cache - https://github.com/ramsey/composer-install
+        uses: "ramsey/composer-install@v3"
+
+      - name: Install Mautic
+        env:
+          DB_PORT: ${{ job.services.database.ports[3306] }}
+        run: |
+          cp ./.github/ci-files/local.php ./app/config/local.php
+          php bin/console mautic:install --force http://localhost
+
+      - name: Install Plugins
+        env:
+          DB_PORT: ${{ job.services.database.ports[3306] }}
+        run: php bin/console mautic:plugins:install --env=dev
+
+      - name: Run tests - database = ${{ matrix.db-types }}
+        run: |
+          rm -rf var/cache
+          export DB_PORT="${{ job.services.database.ports[3306] }}"
+
+          if [[ "${{ matrix.php-versions }}" == "8.1" ]] && [[ "${{ matrix.db-types }}" == "mariadb" ]] && [[ "${{ matrix.mautic-versions }}" == "5.x" ]]; then
+            php -d zend.assertions=1 -d pcov.enabled=1 bin/phpunit -d memory_limit=2G --bootstrap vendor/autoload.php --configuration app/phpunit.xml.dist --coverage-cobertura=coverage.xml --log-junit=junit.xml -- ${{ env.PLUGIN_DIR }}/Tests
+          else
+            php -d zend.assertions=1 bin/phpunit -d memory_limit=1G --bootstrap vendor/autoload.php --configuration app/phpunit.xml.dist -- ${{ env.PLUGIN_DIR }}/Tests
+          fi
+
+      - name: Code Coverage
+        if: ${{ matrix.php-versions == '8.1' && matrix.db-types == 'mariadb' && matrix.mautic-versions == '5.x' }}
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: coverage.xml
+          badge: true
+          format: 'markdown'
+          output: 'both'
+
+      - name: Write to Job Summary
+        if: ${{ matrix.php-versions == '8.1' && matrix.db-types == 'mariadb' && matrix.mautic-versions == '5.x' }}
+        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Save test results for future steps
+        if: ${{ matrix.php-versions == '8.1' && matrix.db-types == 'mysql' && matrix.mautic-versions == '5.x' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            ./junit.xml
+            ./coverage.xml
+
+#      - name: Upload logs as artifacts
+#        if: success() || failure()
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: logs-${{ matrix.php-versions }}-${{ matrix.db-types }}-${{ matrix.mautic-versions }}
+#          path: |
+#            ./var/logs/*
+#            ./media/files/temp/test*.html
+
   integration:
     name: Integration tests
     runs-on: ubuntu-22.04
@@ -28,14 +175,3 @@ jobs:
         run: ./vendor/bin/php-cs-fixer fix --config .php-cs-fixer.php --dry-run --using-cache no --show-progress dots -v
       - name: Run PHPStan
         run: ./vendor/bin/phpstan --no-progress
-      - name: Run PHPUnit
-        run: ./vendor/bin/phpunit --coverage-cobertura=coverage.xml
-      - name: Code Coverage
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        with:
-          filename: coverage.xml
-          badge: true
-          format: 'markdown'
-          output: 'both'
-      - name: Write to Job Summary
-        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY

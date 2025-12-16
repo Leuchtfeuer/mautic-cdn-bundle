@@ -13,8 +13,11 @@
         </exclude>
     </coverage>
     <testsuites>
-        <testsuite name="Tests">
-            <directory>Tests</directory>
+        <testsuite name="Unit tests">
+            <directory>Tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Functional tests">
+            <directory>Tests/Functional</directory>
         </testsuite>
     </testsuites>
     <php>

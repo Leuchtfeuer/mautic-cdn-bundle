@@ -53,6 +53,9 @@
         "allow-plugins": {
             "symfony/flex": true,
             "php-http/discovery": false
+        },
+        "audit": {
+            "block-insecure": false
         }
     }
 }
