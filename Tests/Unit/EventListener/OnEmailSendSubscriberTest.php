@@ -110,6 +110,7 @@ class OnEmailSendSubscriberTest extends TestCase
 
     /**
      * @param array<mixed> $settings
+     *
      * @dataProvider emptyCdnProvider
      */
     public function testEmptyCdnSetting(array $settings): void

@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerCdnBundle\EventListener;
 
-use DOMAttr;
-use DOMElement;
 use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Event\EmailSendEvent;
 use MauticPlugin\LeuchtfeuerCdnBundle\Integration\Config;
-use RuntimeException;
 use Symfony\Component\DomCrawler\AbstractUriElement;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\DomCrawler\Image;
@@ -52,7 +49,7 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
         }
 
         $contentHash = $helper->getContentHash();
-        if (isset($this->replaced[$contentHash])) {
+        if (is_string($contentHash) && isset($this->replaced[$contentHash])) {
             $event->setContent($this->replaced[$contentHash]);
 
             return;
@@ -127,8 +124,8 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
 
         // Replace the token separator, save for future emails with same content.
         $this->replaced[$contentHash] = $content = str_replace(
-            ['"%7B', '%7D"'],
-            ['"{', '}"'],
+            ['%7B', '%7D'],
+            ['{', '}'],
             $html
         );
 
@@ -169,7 +166,7 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
             } elseif ($element instanceof Image) {
                 $element->getNode()->setAttribute('src', str_replace($this->siteUrl, $cdn, $href));
             } else {
-                throw new RuntimeException('The item should be either Link or Image.');
+                throw new \RuntimeException('The item should be either Link or Image.');
             }
         }
     }
@@ -178,13 +175,13 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
     {
         $elements->each(function (Crawler $crawler) use ($extensionsRegex, $cdn, $attribute): void {
             $node = $crawler->getNode(0);
-            if (!$node instanceof DOMElement) {
+            if (!$node instanceof \DOMElement) {
                 return;
             }
 
             $hrefAttribute = $node->attributes->getNamedItem($attribute);
 
-            if (!$hrefAttribute instanceof DOMAttr) {
+            if (!$hrefAttribute instanceof \DOMAttr) {
                 return;
             }
 

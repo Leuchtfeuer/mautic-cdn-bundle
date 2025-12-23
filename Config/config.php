@@ -10,7 +10,7 @@ return [
         'command' => [],
         'other'   => [
             'mautic.leuchtfeuercdn.config' => [
-                'class'     => \MauticPlugin\LeuchtfeuerCdnBundle\Integration\Config::class,
+                'class'     => MauticPlugin\LeuchtfeuerCdnBundle\Integration\Config::class,
                 'arguments' => [
                     'mautic.integrations.helper',
                 ],
@@ -18,7 +18,7 @@ return [
         ],
         'events'  => [
             'mautic.leuchtfeuercdn.subscriber' => [
-                'class'     => \MauticPlugin\LeuchtfeuerCdnBundle\EventListener\OnEmailSendSubscriber::class,
+                'class'     => MauticPlugin\LeuchtfeuerCdnBundle\EventListener\OnEmailSendSubscriber::class,
                 'arguments' => ['mautic.leuchtfeuercdn.config', '%mautic.site_url%'],
             ],
         ],
@@ -27,14 +27,14 @@ return [
         'fixtures'     => [],
         'integrations' => [
             'mautic.integration.leuchtfeuercdn' => [
-                'class' => \MauticPlugin\LeuchtfeuerCdnBundle\Integration\LeuchtfeuerCdnIntegration::class,
+                'class' => MauticPlugin\LeuchtfeuerCdnBundle\Integration\LeuchtfeuerCdnIntegration::class,
                 'tags'  => [
                     'mautic.integration',
                     'mautic.basic_integration',
                 ],
             ],
             'leuchtfeuercdn.integration.configuration' => [
-                'class' => \MauticPlugin\LeuchtfeuerCdnBundle\Integration\Support\ConfigSupport::class,
+                'class' => MauticPlugin\LeuchtfeuerCdnBundle\Integration\Support\ConfigSupport::class,
                 'tags'  => [
                     'mautic.config_integration',
                 ],

@@ -6,6 +6,7 @@ namespace MauticPlugin\LeuchtfeuerCdnBundle\Tests\Functional;
 
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
 use Mautic\EmailBundle\Entity\Email;
+use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadList;
 use Mautic\LeadBundle\Entity\ListLead;
@@ -98,8 +99,10 @@ class SendEmailFunctionalTest extends MauticMysqlTestCase
             '<video><source src="'.$siteDomain.'/video4.mp4"></source></video>'.
             '<img src="'.$siteDomain.'/image5.gif" alt="">'.
             '<link rel="stylesheet" href="'.$siteDomain.'/css6.css?version" />'.
-            '<a href="https://other.tld/#7">Link2 a.com</a>'.
-            '<a href="'.$siteDomain.'/#8">Link2</a></body>';
+            '<link rel="stylesheet" href="https://{webview_url}/css7.css?version" />'.
+            '<a href="https://other.tld/#8">Link2 a.com</a>'.
+            '<a href="https://{webview_url}">Link2 a.com</a>'.
+            '<a href="'.$siteDomain.'/#9">Link2</a></body>';
 
         $replacedHtml = '<head><title>'.$emailSubject.'</title></head><body><a href="'.$replaceToCDN.'/file1.pdf">Link</a>'.
             '<img src="'.$replaceToCDN.'/image2.jpg" alt="">'.
@@ -107,8 +110,10 @@ class SendEmailFunctionalTest extends MauticMysqlTestCase
             '<video><source src="'.$siteDomain.'/video4.mp4"></source></video>'.
             '<img src="'.$siteDomain.'/image5.gif" alt="">'.
             '<link rel="stylesheet" href="'.$siteDomain.'/css6.css?version">'.
-            '<a href="https://other.tld/#7">Link2 a.com</a>'.
-            '<a href="'.$siteDomain.'/#8">Link2</a></body>';
+            '<link rel="stylesheet" href="https://https://localhost/email/view/~{token}~/css7.css?version">'.
+            '<a href="https://other.tld/#8">Link2 a.com</a>'.
+            '<a href="https://https://localhost/email/view/~{token}~">Link2 a.com</a>'.
+            '<a href="'.$siteDomain.'/#9">Link2</a></body>';
 
         $segment = $this->createSegment('segment-a');
         $email   = $this->createSpecificEmail(
@@ -143,34 +148,46 @@ class SendEmailFunctionalTest extends MauticMysqlTestCase
         self::assertQueuedEmailCount(3);
 
         $emailIndex = 0;
-        $email      = self::getMailerMessage($emailIndex);
-        Assert::assertInstanceOf(\Symfony\Component\Mime\Email::class, $email);
-        Assert::assertSame($emailSubject, $email->getSubject());
-        $htmlBody        = $email->getHtmlBody();
+        $sentEmail  = self::getMailerMessage($emailIndex);
+        Assert::assertInstanceOf(MauticMessage::class, $sentEmail);
+        Assert::assertSame($emailSubject, $sentEmail->getSubject());
+        $htmlBody        = $sentEmail->getHtmlBody();
         Assert::assertIsString($htmlBody);
         $htmlBodyNoToken = preg_replace('/<img height="1" width="1"[^>]+>/', '', $htmlBody);
         Assert::assertIsString($htmlBodyNoToken);
-        Assert::assertSame($replacedHtml, $htmlBodyNoToken);
+        $leadIdHash = $sentEmail->getLeadIdHash();
+        Assert::assertIsString($leadIdHash);
+        $assertedHtml = str_replace('~{token}~', $leadIdHash, $replacedHtml);
+        Assert::assertIsString($assertedHtml);
+        Assert::assertSame($assertedHtml, $htmlBodyNoToken);
 
         $emailIndex = 1;
-        $email      = self::getMailerMessage($emailIndex);
-        Assert::assertInstanceOf(\Symfony\Component\Mime\Email::class, $email);
-        Assert::assertSame($emailSubject, $email->getSubject());
-        $htmlBody        = $email->getHtmlBody();
+        $sentEmail  = self::getMailerMessage($emailIndex);
+        Assert::assertInstanceOf(\Symfony\Component\Mime\Email::class, $sentEmail);
+        Assert::assertSame($emailSubject, $sentEmail->getSubject());
+        $htmlBody        = $sentEmail->getHtmlBody();
         Assert::assertIsString($htmlBody);
         $htmlBodyNoToken = preg_replace('/<img height="1" width="1"[^>]+>/', '', $htmlBody);
         Assert::assertIsString($htmlBodyNoToken);
-        Assert::assertSame($replacedHtml, $htmlBodyNoToken);
+        $leadIdHash = $sentEmail->getLeadIdHash();
+        Assert::assertIsString($leadIdHash);
+        $assertedHtml = str_replace('~{token}~', $leadIdHash, $replacedHtml);
+        Assert::assertIsString($assertedHtml);
+        Assert::assertSame($assertedHtml, $htmlBodyNoToken);
 
         $emailIndex = 2;
-        $email      = self::getMailerMessage($emailIndex);
-        Assert::assertInstanceOf(\Symfony\Component\Mime\Email::class, $email);
-        Assert::assertSame($emailSubject, $email->getSubject());
-        $htmlBody        = $email->getHtmlBody();
+        $sentEmail  = self::getMailerMessage($emailIndex);
+        Assert::assertInstanceOf(\Symfony\Component\Mime\Email::class, $sentEmail);
+        Assert::assertSame($emailSubject, $sentEmail->getSubject());
+        $htmlBody        = $sentEmail->getHtmlBody();
         Assert::assertIsString($htmlBody);
         $htmlBodyNoToken = preg_replace('/<img height="1" width="1"[^>]+>/', '', $htmlBody);
         Assert::assertIsString($htmlBodyNoToken);
-        Assert::assertSame($replacedHtml, $htmlBodyNoToken);
+        $leadIdHash = $sentEmail->getLeadIdHash();
+        Assert::assertIsString($leadIdHash);
+        $assertedHtml = str_replace('~{token}~', $leadIdHash, $replacedHtml);
+        Assert::assertIsString($assertedHtml);
+        Assert::assertSame($assertedHtml, $htmlBodyNoToken);
     }
 
     public static function provideDomains(): \Generator
