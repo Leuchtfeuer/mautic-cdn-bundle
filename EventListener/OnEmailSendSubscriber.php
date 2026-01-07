@@ -122,12 +122,20 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
         $this->replaceElement($crawler->filter('[background]'), $extensionsRegex, $cdn, 'background');
         $html = $crawler->html();
 
-        // Replace the token separator, save for future emails with same content.
-        $this->replaced[$contentHash] = $content = str_replace(
-            ['%7B', '%7D'],
-            ['{', '}'],
+        $content = preg_replace_callback(
+            '~(%7B)(.*)(%7D)~',
+            static function (array $matches): string {
+                return '{'.rawurldecode($matches[2]).'}';
+            },
             $html
         );
+
+        if (null === $content) {
+            return;
+        }
+
+        // Replace the token separator, save for future emails with same content.
+        $this->replaced[$contentHash] = $content;
 
         $event->setContent($content);
     }

@@ -100,6 +100,9 @@ class SendEmailFunctionalTest extends MauticMysqlTestCase
             '<img src="'.$siteDomain.'/image5.gif" alt="">'.
             '<link rel="stylesheet" href="'.$siteDomain.'/css6.css?version" />'.
             '<link rel="stylesheet" href="https://{webview_url}/css7.css?version" />'.
+            '<a href="#{field=!@#$%^&*()-=+|[]}">The link with token</a>'.
+            '<span>{field=!@#$%^&*()-=+|[]}</span>'. // The token within the HTML
+            '<a href="#{contactfield=email|true}">The link with email token</a>'.
             '<a href="https://other.tld/#8">Link2 a.com</a>'.
             '<a href="https://{webview_url}">Link2 a.com</a>'.
             '<a href="'.$siteDomain.'/#9">Link2</a></body>';
@@ -111,6 +114,9 @@ class SendEmailFunctionalTest extends MauticMysqlTestCase
             '<img src="'.$siteDomain.'/image5.gif" alt="">'.
             '<link rel="stylesheet" href="'.$siteDomain.'/css6.css?version">'.
             '<link rel="stylesheet" href="https://https://localhost/email/view/~{token}~/css7.css?version">'.
+            '<a href="#{field=!@#$%^&amp;*()-=+|[]}">The link with token</a>'.
+            '<span>{field=!@#$%^&amp;*()-=+|[]}</span>'. // The token within the HTML
+            '<a href="#{contactfield=email|true}">The link with email token</a>'.
             '<a href="https://other.tld/#8">Link2 a.com</a>'.
             '<a href="https://https://localhost/email/view/~{token}~">Link2 a.com</a>'.
             '<a href="'.$siteDomain.'/#9">Link2</a></body>';
@@ -157,7 +163,17 @@ class SendEmailFunctionalTest extends MauticMysqlTestCase
         Assert::assertIsString($htmlBodyNoToken);
         $leadIdHash = $sentEmail->getLeadIdHash();
         Assert::assertIsString($leadIdHash);
-        $assertedHtml = str_replace('~{token}~', $leadIdHash, $replacedHtml);
+        $assertedHtml = str_replace(
+            [
+                '~{token}~',
+                '{contactfield=email|true}',
+            ],
+            [
+                $leadIdHash,
+                urlencode($sentEmail->getTo()[0]->getEncodedAddress()),
+            ],
+            $replacedHtml
+        );
         Assert::assertIsString($assertedHtml);
         Assert::assertSame($assertedHtml, $htmlBodyNoToken);
 
@@ -171,7 +187,17 @@ class SendEmailFunctionalTest extends MauticMysqlTestCase
         Assert::assertIsString($htmlBodyNoToken);
         $leadIdHash = $sentEmail->getLeadIdHash();
         Assert::assertIsString($leadIdHash);
-        $assertedHtml = str_replace('~{token}~', $leadIdHash, $replacedHtml);
+        $assertedHtml = str_replace(
+            [
+                '~{token}~',
+                '{contactfield=email|true}',
+            ],
+            [
+                $leadIdHash,
+                urlencode($sentEmail->getTo()[0]->getEncodedAddress()),
+            ],
+            $replacedHtml
+        );
         Assert::assertIsString($assertedHtml);
         Assert::assertSame($assertedHtml, $htmlBodyNoToken);
 
@@ -185,7 +211,17 @@ class SendEmailFunctionalTest extends MauticMysqlTestCase
         Assert::assertIsString($htmlBodyNoToken);
         $leadIdHash = $sentEmail->getLeadIdHash();
         Assert::assertIsString($leadIdHash);
-        $assertedHtml = str_replace('~{token}~', $leadIdHash, $replacedHtml);
+        $assertedHtml = str_replace(
+            [
+                '~{token}~',
+                '{contactfield=email|true}',
+            ],
+            [
+                $leadIdHash,
+                urlencode($sentEmail->getTo()[0]->getEncodedAddress()),
+            ],
+            $replacedHtml
+        );
         Assert::assertIsString($assertedHtml);
         Assert::assertSame($assertedHtml, $htmlBodyNoToken);
     }
