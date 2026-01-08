@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerCdnBundle\EventListener;
 
-use DOMAttr;
-use DOMElement;
 use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Event\EmailSendEvent;
 use MauticPlugin\LeuchtfeuerCdnBundle\Integration\Config;
-use RuntimeException;
 use Symfony\Component\DomCrawler\AbstractUriElement;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\DomCrawler\Image;
@@ -23,7 +20,7 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
     private string $siteUrl;
 
     /**
-     * @var array<int, true>
+     * @var array<string, string>
      */
     private array $replaced = [];
 
@@ -35,6 +32,10 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
 
     public function onSend(EmailSendEvent $event): void
     {
+        if (!$this->config->isPublished()) {
+            return;
+        }
+
         $helper = $event->getHelper();
 
         if (null === $helper) {
@@ -43,17 +44,14 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
 
         $email = $event->getEmail();
 
-        if (null === $email || null === $email->getId()) {
+        if (null === $email) {
             return;
         }
 
-        if (isset($this->replaced[$email->getId()])) {
-            return;
-        }
+        $contentHash = $helper->getContentHash();
+        if (is_string($contentHash) && isset($this->replaced[$contentHash])) {
+            $event->setContent($this->replaced[$contentHash]);
 
-        $this->replaced[$email->getId()] = true;
-
-        if (!$this->config->isPublished()) {
             return;
         }
 
@@ -68,7 +66,7 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $html  = $email->getCustomHtml();
+        $html = $event->getContent();
         assert(is_string($html));
 
         if ('' === $html) {
@@ -124,7 +122,22 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
         $this->replaceElement($crawler->filter('[background]'), $extensionsRegex, $cdn, 'background');
         $html = $crawler->html();
 
-        $helper->setBody($html);
+        $content = preg_replace_callback(
+            '~(%7B)(.*)(%7D)~',
+            static function (array $matches): string {
+                return '{'.rawurldecode($matches[2]).'}';
+            },
+            $html
+        );
+
+        if (null === $content) {
+            return;
+        }
+
+        // Replace the token separator, save for future emails with same content.
+        $this->replaced[$contentHash] = $content;
+
+        $event->setContent($content);
     }
 
     /**
@@ -161,7 +174,7 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
             } elseif ($element instanceof Image) {
                 $element->getNode()->setAttribute('src', str_replace($this->siteUrl, $cdn, $href));
             } else {
-                throw new RuntimeException('The item should be either Link or Image.');
+                throw new \RuntimeException('The item should be either Link or Image.');
             }
         }
     }
@@ -170,13 +183,13 @@ class OnEmailSendSubscriber implements EventSubscriberInterface
     {
         $elements->each(function (Crawler $crawler) use ($extensionsRegex, $cdn, $attribute): void {
             $node = $crawler->getNode(0);
-            if (!$node instanceof DOMElement) {
+            if (!$node instanceof \DOMElement) {
                 return;
             }
 
             $hrefAttribute = $node->attributes->getNamedItem($attribute);
 
-            if (!$hrefAttribute instanceof DOMAttr) {
+            if (!$hrefAttribute instanceof \DOMAttr) {
                 return;
             }
 

@@ -2,14 +2,14 @@
 /**
  * This is a copy of app/bundles/CoreBundle/Views/FormTheme/Custom/sortablelist_row.html.php.
  *
- * @var \Symfony\Component\Form\FormView               $form
- * @var \Mautic\CoreBundle\Templating\Engine\PhpEngine $view
- * @var bool                                           $isSortable
- * @var string|null                                    $label
- * @var string                                         $addValueButton
+ * @var Symfony\Component\Form\FormView               $form
+ * @var Mautic\CoreBundle\Templating\Engine\PhpEngine $view
+ * @var bool                                          $isSortable
+ * @var string|null                                   $label
+ * @var string                                        $addValueButton
  */
 $list            = $form->children['list'];
-/** @var \Mautic\CoreBundle\Templating\Helper\FormHelper $formHelper */
+/** @var Mautic\CoreBundle\Templating\Helper\FormHelper $formHelper */
 $formHelper      = $view['form'];
 $parentHasErrors = $formHelper->containsErrors($form->parent);
 
@@ -32,8 +32,8 @@ $datePrototype = (isset($list->vars['prototype'])) ?
         </div>
         <?php if ($isSortable): ?>
         <div id="sortable-<?php echo $form->vars['id']; ?>" class="list-sortable" <?php foreach ($attr as $k => $v) {
-    printf('%s="%s" ', $view->escape($k), $view->escape($v));
-}?>>
+            printf('%s="%s" ', $view->escape($k), $view->escape($v));
+        }?>>
             <?php endif; ?>
             <?php foreach ($list->children as $key => $item): ?>
                 <?php echo $formHelper->block($item, 'sortablelist_entry_row'); ?>

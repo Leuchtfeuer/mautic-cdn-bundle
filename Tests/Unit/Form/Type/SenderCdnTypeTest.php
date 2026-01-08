@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\LeuchtfeuerCdnBundle\Tests\Form\Type;
+namespace MauticPlugin\LeuchtfeuerCdnBundle\Tests\Form\Unit\Type;
 
 use MauticPlugin\LeuchtfeuerCdnBundle\Form\Type\SenderCdnType;
 use PHPUnit\Framework\TestCase;
