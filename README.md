@@ -12,8 +12,8 @@
 3. Enable bundle.
 
 ### How it works
-The bundle provides a subscriber to the `EmailEvents::EMAIL_PRE_SAVE`, which is being called
-when the Mautic saves Email. The subscriber searches for the `site_url` mautic config value in the email
+The bundle provides a subscriber to the `EmailEvents::EMAIL_ON_SEND`, which is being called
+when the Mautic sends an Email. The subscriber searches for the `site_url` mautic config value in the email
 and replaces it with the value given in the plugin configuration script. You must limit the extensions of
 the files served from CDN in the `Extensions` config option of the plugin.
 
