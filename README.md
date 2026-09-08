@@ -1,4 +1,6 @@
-# Serve assets from CDN in the Email by Leuchtfeuer
+# Plugin: CDN Bundle by Leuchtfeuer
+
+## Mautic 5 is EoS - There won't be support for Mautc 6 and further versions.
 
 ### Works with
 * Mautic 4
